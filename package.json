@@ -1,0 +1,106 @@
+{
+  "name": "docusaurus-mdx-previewer",
+  "displayName": "Docusaurus MDX Previewer",
+  "description": "A VSCode extension for real-time preview of Docusaurus MDX documents with PlantUML and Mermaid support",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "docusaurus-preview.showPreview",
+        "title": "Show Docusaurus MDX Preview",
+        "icon": "$(open-preview)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "docusaurus-preview.showPreview",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p",
+        "when": "editorLangId == markdown || editorLangId == mdx"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "docusaurus-preview.showPreview",
+          "group": "navigation",
+          "when": "editorLangId == markdown || editorLangId == mdx"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Docusaurus MDX Preview",
+      "properties": {
+        "docusaurusMdxPreview.plantumlServer": {
+          "type": "string",
+          "default": "https://kroki.io",
+          "description": "PlantUML server URL for diagram rendering"
+        },
+        "docusaurusMdxPreview.refreshInterval": {
+          "type": "number",
+          "default": 500,
+          "description": "Preview refresh interval in milliseconds"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.26.0",
+    "@types/babel__core": "^7.20.5",
+    "@types/lodash": "^4.17.16",
+    "@types/marked": "^4.0.8",
+    "@types/mermaid": "^9.2.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.97.0",
+    "@typescript-eslint/eslint-plugin": "^8.22.0",
+    "@typescript-eslint/parser": "^8.22.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.19.0",
+    "ts-loader": "^9.5.2",
+    "type-fest": "^4.36.0",
+    "typescript": "^5.7.3",
+    "unist-util-mdx-define": "^1.1.1",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@babel/core": "^7.26.10",
+    "@babel/preset-react": "^7.26.3",
+    "@docusaurus/mdx-loader": "^3.7.0",
+    "@mdx-js/mdx": "^3.1.0",
+    "@mdx-js/react": "^3.1.0",
+    "estree-util-value-to-estree": "^2.1.0",
+    "marked": "^4.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "remark-mdx-frontmatter": "^5.1.0"
+  },
+  "files": [
+    "dist",
+    "lib"
+  ],
+  "license": "MIT"
+}
