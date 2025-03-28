@@ -2,6 +2,8 @@
 
 A VSCode extension to preview Docusaurus MDX files with real-time rendering, including support for PlantUML and Mermaid diagrams.
 
+![](./assets/mdx_preview.gif)
+
 ## Features
 
 - **Live Preview**: Preview your Docusaurus MDX files in a single, reusable Webview panel.
