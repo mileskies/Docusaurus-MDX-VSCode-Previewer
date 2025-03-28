@@ -13,6 +13,10 @@
     "onLanguage:markdown"
   ],
   "main": "./out/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mileskies/Docusaurus-MDX-VSCode-Previewer.git"
+  },
   "contributes": {
     "commands": [
       {
