@@ -12,6 +12,10 @@ A VSCode extension to preview Docusaurus MDX files with real-time rendering, inc
 - **Real-time Updates**: Automatically updates the preview when switching between MDX files or editing content.
 - **Code Highlighting**: Syntax highlighting for code blocks using `rehype-highlight`.
 
+## Future works
+
+- Support `import` syntax.
+
 ## Installation
 
 1. **Install from VSIX**:

@@ -2,12 +2,15 @@
   "name": "docusaurus-mdx-previewer",
   "displayName": "Docusaurus MDX Previewer",
   "description": "A VSCode extension for real-time preview of Docusaurus MDX documents with PlantUML and Mermaid support",
-  "version": "1.0.0",
+  "publisher": "mileskies",
+  "icon": "assets/icon.png",
+  "keywords": ["mdx", "markdown", "preview", "docusaurus", "plantuml"],
+  "version": "1.0.2",
   "engines": {
     "vscode": "^1.97.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages"
   ],
   "activationEvents": [
     "onLanguage:markdown"
@@ -103,8 +106,8 @@
     "remark-mdx-frontmatter": "^5.1.0"
   },
   "files": [
-    "dist",
-    "lib"
+    "dist/",
+    "assets/"
   ],
   "license": "MIT"
 }

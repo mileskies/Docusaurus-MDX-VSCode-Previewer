@@ -40,7 +40,7 @@ export class MDXPreviewProvider implements vscode.CustomReadonlyEditorProvider {
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.file(path.dirname(document.fileName)),
-        this.extensionUri
+        this.extensionUri,
       ]
     };
 
@@ -48,10 +48,14 @@ export class MDXPreviewProvider implements vscode.CustomReadonlyEditorProvider {
     const plantumlServer = config.get<string>('plantumlServer') || 'https://kroki.io';
     
     let text = document.getText();
-    const plantumlResults = await this.processPlantUML(text, plantumlServer);
+    const fileDir = path.dirname(document.fileName);
+    const baseUrl = vscode.Uri.file(fileDir).toString() + '/';
+    const imageResults = this.processImages(text, document.fileName, webview);
+    const plantumlResults = await this.processPlantUML(imageResults.processedText, plantumlServer);
     const mermaidResults = await this.processMermaid(plantumlResults.processedText, plantumlServer);
 
     const diagrams = [...plantumlResults.diagrams, ...mermaidResults.diagrams];
+    const images = imageResults.images;
     text = mermaidResults.processedText;
 
     try {
@@ -63,7 +67,9 @@ export class MDXPreviewProvider implements vscode.CustomReadonlyEditorProvider {
       webview.postMessage({
         type: 'update',
         code: mdxCode,
+        baseUrl,
         diagrams: diagrams.map(d => ({ id: d.id, svg: d.svg })),
+        images,
       });
     } catch (error: any) {
       console.error('MDX Process Error:', error);
@@ -75,9 +81,17 @@ export class MDXPreviewProvider implements vscode.CustomReadonlyEditorProvider {
   }
 
   public getMDXHtmlForWebview(context: vscode.ExtensionContext, webview: vscode.Webview): string {
-    const reactScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'lib', 'react.production.min.js'));
-    const reactDomScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'lib', 'react-dom.production.min.js'));
-    const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'lib', 'styles.css'));
+    const reactScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'js', 'react.production.min.js'));
+    const reactDomScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'js', 'react-dom.production.min.js'));
+    const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'css', 'styles.css'));
+
+    const csp = `
+      default-src 'self';
+      script-src 'unsafe-inline' 'unsafe-eval' ${webview.cspSource};
+      style-src 'unsafe-inline' ${webview.cspSource};
+      img-src ${webview.cspSource} https: http: data:;
+      connect-src https: http:;
+    `;
 
     return `
         <!DOCTYPE html>
@@ -85,6 +99,7 @@ export class MDXPreviewProvider implements vscode.CustomReadonlyEditorProvider {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="Content-Security-Policy" content="${csp}">
             <title>Docusaurus MDX Preview</title>
             <style>
               html, body {
@@ -123,9 +138,24 @@ export class MDXPreviewProvider implements vscode.CustomReadonlyEditorProvider {
               if (message.type === 'update') {
                 try {
                   const code = String(message.code);
-                  const render = new Function(code);
-                  const Component = render();
-                  ReactDOM.render(Component, root);
+                  const baseUrl = message.baseUrl;
+                  const render = new Function('options', code);
+                  const Component = render({ baseUrl });
+                  if (Component && typeof Component.default === 'function') {
+                    ReactDOM.render(Component.default({}), root);
+                  } else {
+                    ReactDOM.render(Component, root);
+                  }
+
+                  if (message.images) {
+                    message.images.forEach(({ src, resolvedSrc }) => {
+                      const imgElements = document.querySelectorAll(\`img[src="\${src}"]\`);
+                      imgElements.forEach(img => {
+                        img.src = resolvedSrc;
+                        img.onerror = () => img.alt = 'Image failed to load: ' + src;
+                      });
+                    });
+                  }
 
                   if (message.diagrams) {
                     message.diagrams.forEach(({ id, svg }) => {
@@ -185,6 +215,38 @@ export class MDXPreviewProvider implements vscode.CustomReadonlyEditorProvider {
       </body>
       </html>
     `;
+  }
+
+  private processImages(
+    text: string,
+    filePath: string,
+    webview: vscode.Webview
+  ): { processedText: string; images: { src: string; resolvedSrc: string }[] } {
+    const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
+    const matches: { src: string; original: string }[] = [];
+    let match;
+
+    while ((match = imageRegex.exec(text)) !== null) {
+      matches.push({ src: match[2], original: match[0] });
+    }
+
+    if (matches.length === 0) { return { processedText: text, images: [] }; }
+
+    const images: { src: string; resolvedSrc: string }[] = [];
+    const fileDir = path.dirname(filePath);
+
+    matches.forEach(({ src }) => {
+      let resolvedSrc: string;
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        resolvedSrc = src;
+      } else {
+        const absolutePath = path.resolve(fileDir, src);
+        resolvedSrc = webview.asWebviewUri(vscode.Uri.file(absolutePath)).toString();
+      }
+      images.push({ src, resolvedSrc });
+    });
+
+    return { processedText: text, images };
   }
 
   private async processPlantUML(text: string, serverUrl: string): Promise<{ processedText: string; diagrams: { id: string; svg: string }[] }> {
